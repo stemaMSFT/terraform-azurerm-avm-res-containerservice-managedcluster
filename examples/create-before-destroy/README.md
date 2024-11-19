@@ -1,7 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
-# Default example
+# Nodepools: create before destroy
 
-This deploys the module in its simplest form.
+This deploys the module with nodepools that have the create\_before\_destroy lifecycle property set to true.
 
 ```hcl
 terraform {
@@ -55,15 +55,12 @@ resource "azurerm_resource_group" "this" {
 
 data "azurerm_client_config" "current" {}
 
-# This is the module call
-# Do not specify location here due to the randomization above.
-# Leaving location as `null` will cause the module to use the resource group location
-# with a data source.
-module "default" {
-  source              = "../.."
-  name                = module.naming.kubernetes_cluster.name_unique
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
+module "create_before_destroy" {
+  source                          = "../.."
+  name                            = module.naming.kubernetes_cluster.name_unique
+  resource_group_name             = azurerm_resource_group.this.name
+  location                        = azurerm_resource_group.this.location
+  create_nodepools_before_destroy = true
 
   azure_active_directory_role_based_access_control = {
     azure_rbac_enabled = true
@@ -71,12 +68,49 @@ module "default" {
   }
 
   default_node_pool = {
-    name       = "default"
-    vm_size    = "Standard_DS2_v2"
-    node_count = 3
+    name                         = "default"
+    vm_size                      = "Standard_DS2_v2"
+    auto_scaling_enabled         = true
+    max_count                    = 3
+    max_pods                     = 30
+    min_count                    = 1
+    only_critical_addons_enabled = true
 
     upgrade_settings = {
       max_surge = "10%"
+    }
+  }
+
+  network_profile = {
+    network_plugin = "kubenet"
+  }
+
+  node_pools = {
+    unp1 = {
+      name                 = "unp1"
+      vm_size              = "Standard_DS2_v2"
+      zones                = [3]
+      auto_scaling_enabled = true
+      max_count            = 3
+      max_pods             = 30
+      min_count            = 1
+      os_disk_size_gb      = 128
+      upgrade_settings = {
+        max_surge = "10%"
+      }
+    }
+    unp2 = {
+      name                 = "unp2"
+      vm_size              = "Standard_DS2_v2"
+      zones                = [3]
+      auto_scaling_enabled = true
+      max_count            = 3
+      max_pods             = 30
+      min_count            = 1
+      os_disk_size_gb      = 128
+      upgrade_settings = {
+        max_surge = "10%"
+      }
     }
   }
 }
@@ -118,7 +152,7 @@ No outputs.
 
 The following Modules are called:
 
-### <a name="module_default"></a> [default](#module\_default)
+### <a name="module_create_before_destroy"></a> [create\_before\_destroy](#module\_create\_before\_destroy)
 
 Source: ../..
 
