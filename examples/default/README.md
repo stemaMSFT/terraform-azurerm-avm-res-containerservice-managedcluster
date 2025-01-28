@@ -49,8 +49,8 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = coalesce(var.location, module.regions.regions[random_integer.region_index.result].name)
-  name     = coalesce(var.resource_group_name, module.naming.resource_group.name_unique)
+  location = module.regions.regions[random_integer.region_index.result].name
+  name     = module.naming.resource_group.name_unique
 }
 
 data "azurerm_client_config" "current" {}
@@ -61,7 +61,7 @@ data "azurerm_client_config" "current" {}
 # with a data source.
 module "default" {
   source              = "../.."
-  name                = coalesce(var.cluster_name, module.naming.kubernetes_cluster.name_unique)
+  name                = module.naming.kubernetes_cluster.name_unique
   resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
 
@@ -108,31 +108,7 @@ No required inputs.
 
 ## Optional Inputs
 
-The following input variables are optional (have default values):
-
-### <a name="input_cluster-name"></a> [cluster-name](#input\_cluster-name)
-
-Description: The name of the Kubernetes cluster
-
-Type: `string`
-
-Default: `null`
-
-### <a name="input_location"></a> [location](#input\_location)
-
-Description: The location of the resource group. Leaving this as null will select a random region
-
-Type: `string`
-
-Default: `null`
-
-### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
-
-Description: The name of the resource group
-
-Type: `string`
-
-Default: `null`
+No optional inputs.
 
 ## Outputs
 
