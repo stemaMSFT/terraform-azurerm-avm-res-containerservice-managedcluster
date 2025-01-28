@@ -1,4 +1,4 @@
-variable "cluster_name" {
+variable "cluster-name" {
   type        = string
   default     = null
   description = "The name of the Kubernetes cluster"
