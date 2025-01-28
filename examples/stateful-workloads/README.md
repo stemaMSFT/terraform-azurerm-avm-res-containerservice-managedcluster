@@ -55,7 +55,7 @@ resource "azurerm_resource_group" "this" {
 
 data "azurerm_client_config" "current" {}
 
-module "avm-res-keyvault-vault" {
+module "avm_res_keyvault_vault" {
   source              = "Azure/avm-res-keyvault-vault/azurerm"
   version             = "0.9.1"
   location            = azurerm_resource_group.this.location
@@ -65,8 +65,7 @@ module "avm-res-keyvault-vault" {
   #enable_rbac_authorization = false
   legacy_access_policies_enabled = true
 }
-
-module "avm-res-containerregistry-registry" {
+module "avm_res_containerregistry_registry" {
   source              = "Azure/avm-res-containerregistry-registry/azurerm"
   version             = "0.4.0"
   resource_group_name = azurerm_resource_group.this.name
@@ -76,30 +75,52 @@ module "avm-res-containerregistry-registry" {
   admin_enabled       = true
 }
 
+# TODO: add storage account module for mongo - https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm/latest
 # This is the module call
 # Do not specify location here due to the randomization above.
 # Leaving location as `null` will cause the module to use the resource group location
 # with a data source.
 module "default" {
-  source              = "../.."
-  name                = coalesce(var.cluster_name, module.naming.kubernetes_cluster.name_unique)
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
-
-  azure_active_directory_role_based_access_control = {
-    azure_rbac_enabled = true
-    tenant_id          = data.azurerm_client_config.current.tenant_id
-  }
+  source                    = "../.."
+  name                      = coalesce(var.cluster_name, module.naming.kubernetes_cluster.name_unique)
+  resource_group_name       = azurerm_resource_group.this.name
+  location                  = azurerm_resource_group.this.location
+  sku_tier                  = "Standard"
+  local_account_disabled    = false
+  node_os_channel_upgrade   = "NodeImage"
+  automatic_upgrade_channel = "stable"
 
   default_node_pool = {
-    name       = "default"
-    vm_size    = "Standard_DS2_v2"
-    node_count = 3
+    name                    = "default"
+    node_count              = 3
+    vm_size                 = "Standard_D2ds_v4"
+    os_type                 = "Linux"
+    auto_upgrade_channel    = "stable"
+    node_os_upgrade_channel = "NodeImage"
+    zones                   = [1, 2, 3]
 
+    addon_profile = {
+      azure_key_vault_secrets_provider = {
+        enabled = true
+      }
+    }
     upgrade_settings = {
       max_surge = "10%"
     }
   }
+
+  node_pools                = var.node_pools
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+  network_profile = {
+    network_plugin = "azure"
+  }
+
+}
+resource "azurerm_role_assignment" "acr_role_assignment" {
+  principal_id         = module.default.kubelet_identity_id
+  scope                = module.avm_res_containerregistry_registry.resource_id
+  role_definition_name = "AcrPull"
 }
 ```
 
@@ -119,6 +140,7 @@ The following requirements are needed by this module:
 The following resources are used by this module:
 
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_role_assignment.acr_role_assignment](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
 - [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
 
@@ -147,6 +169,40 @@ Type: `string`
 
 Default: `null`
 
+### <a name="input_node_pools"></a> [node\_pools](#input\_node\_pools)
+
+Description: Optional. The additional node pools for the Kubernetes cluster.
+
+Type:
+
+```hcl
+map(object({
+    name       = string
+    vm_size    = string
+    node_count = number
+    zones      = optional(list(string))
+    os_type    = string
+  }))
+```
+
+Default:
+
+```json
+{
+  "valkey": {
+    "name": "valkey",
+    "node_count": 6,
+    "os_type": "Linux",
+    "vm_size": "Standard_D2ds_v4",
+    "zones": [
+      1,
+      2,
+      3
+    ]
+  }
+}
+```
+
 ### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
 
 Description: The name of the resource group
@@ -163,13 +219,13 @@ No outputs.
 
 The following Modules are called:
 
-### <a name="module_avm-res-containerregistry-registry"></a> [avm-res-containerregistry-registry](#module\_avm-res-containerregistry-registry)
+### <a name="module_avm_res_containerregistry_registry"></a> [avm\_res\_containerregistry\_registry](#module\_avm\_res\_containerregistry\_registry)
 
 Source: Azure/avm-res-containerregistry-registry/azurerm
 
 Version: 0.4.0
 
-### <a name="module_avm-res-keyvault-vault"></a> [avm-res-keyvault-vault](#module\_avm-res-keyvault-vault)
+### <a name="module_avm_res_keyvault_vault"></a> [avm\_res\_keyvault\_vault](#module\_avm\_res\_keyvault\_vault)
 
 Source: Azure/avm-res-keyvault-vault/azurerm
 
