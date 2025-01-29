@@ -18,15 +18,7 @@ variable "node_pools" {
     zones      = optional(list(string))
     os_type    = string
   }))
-  default = {
-    valkey = {
-      name       = "valkey"
-      vm_size    = "Standard_D2ds_v4"
-      node_count = 6
-      zones      = [1, 2, 3]
-      os_type    = "Linux"
-    }
-  }
+  default     = {}
   description = "Optional. The additional node pools for the Kubernetes cluster."
 }
 

@@ -69,7 +69,27 @@ module "avm_res_containerregistry_registry" {
   admin_enabled       = true
 }
 
-# TODO: add storage account module for mongo - https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm/latest
+module "avm_res_storage_storageaccount" {
+  for_each = { for key, pool in var.node_pools : key => pool if pool.name == "mongodb" }
+
+  source                   = "Azure/avm-res-storage-storageaccount/azurerm"
+  version                  = "0.4.0"
+  resource_group_name      = azurerm_resource_group.this.name
+  name                     = module.naming.storage_account.name_unique
+  location                 = azurerm_resource_group.this.location
+  account_tier             = "Standard"
+  account_replication_type = "ZRS"
+
+}
+
+resource "azurerm_storage_container" "this" {
+  for_each = { for key, pool in var.node_pools : key => pool if pool.name == "mongodb" }
+
+  name               = "backups"
+  storage_account_id = module.avm_res_storage_storageaccount[each.key].resource_id
+}
+
+
 # This is the module call
 # Do not specify location here due to the randomization above.
 # Leaving location as `null` will cause the module to use the resource group location

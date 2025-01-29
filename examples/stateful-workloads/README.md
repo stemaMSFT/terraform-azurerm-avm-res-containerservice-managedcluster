@@ -75,7 +75,27 @@ module "avm_res_containerregistry_registry" {
   admin_enabled       = true
 }
 
-# TODO: add storage account module for mongo - https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm/latest
+module "avm_res_storage_storageaccount" {
+  for_each = { for key, pool in var.node_pools : key => pool if pool.name == "mongodb" }
+
+  source                   = "Azure/avm-res-storage-storageaccount/azurerm"
+  version                  = "0.4.0"
+  resource_group_name      = azurerm_resource_group.this.name
+  name                     = module.naming.storage_account.name_unique
+  location                 = azurerm_resource_group.this.location
+  account_tier             = "Standard"
+  account_replication_type = "ZRS"
+
+}
+
+resource "azurerm_storage_container" "this" {
+  for_each = { for key, pool in var.node_pools : key => pool if pool.name == "mongodb" }
+
+  name               = "backups"
+  storage_account_id = module.avm_res_storage_storageaccount[each.key].resource_id
+}
+
+
 # This is the module call
 # Do not specify location here due to the randomization above.
 # Leaving location as `null` will cause the module to use the resource group location
@@ -141,6 +161,7 @@ The following resources are used by this module:
 
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_role_assignment.acr_role_assignment](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
+- [azurerm_storage_container.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_container) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
 - [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
 
@@ -185,23 +206,7 @@ map(object({
   }))
 ```
 
-Default:
-
-```json
-{
-  "valkey": {
-    "name": "valkey",
-    "node_count": 6,
-    "os_type": "Linux",
-    "vm_size": "Standard_D2ds_v4",
-    "zones": [
-      1,
-      2,
-      3
-    ]
-  }
-}
-```
+Default: `{}`
 
 ### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
 
@@ -230,6 +235,12 @@ Version: 0.4.0
 Source: Azure/avm-res-keyvault-vault/azurerm
 
 Version: 0.9.1
+
+### <a name="module_avm_res_storage_storageaccount"></a> [avm\_res\_storage\_storageaccount](#module\_avm\_res\_storage\_storageaccount)
+
+Source: Azure/avm-res-storage-storageaccount/azurerm
+
+Version: 0.4.0
 
 ### <a name="module_default"></a> [default](#module\_default)
 
