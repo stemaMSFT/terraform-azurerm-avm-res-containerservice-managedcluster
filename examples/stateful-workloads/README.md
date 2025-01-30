@@ -206,7 +206,21 @@ map(object({
   }))
 ```
 
-Default: `{}`
+Default:
+
+```json
+{
+  "statefulworkload": {
+    "name": "statefulworkload",
+    "node_count": 1,
+    "os_type": "Linux",
+    "vm_size": "Standard_D2ds_v4",
+    "zones": [
+      1
+    ]
+  }
+}
+```
 
 ### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
 
