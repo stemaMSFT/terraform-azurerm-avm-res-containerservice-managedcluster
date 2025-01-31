@@ -20,8 +20,8 @@ variable "node_pools" {
   }))
   default = {
     # This is an example of a node pool for a stateful workload with minimal configuration
-    statefulworkload = {
-      name       = "statefulworkload"
+    stateful = {
+      name       = "stateful"
       vm_size    = "Standard_D2ds_v4"
       node_count = 1
       zones      = [1]

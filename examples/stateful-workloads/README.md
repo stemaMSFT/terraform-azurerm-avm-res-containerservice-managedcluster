@@ -210,8 +210,8 @@ Default:
 
 ```json
 {
-  "statefulworkload": {
-    "name": "statefulworkload",
+  "stateful": {
+    "name": "stateful",
     "node_count": 1,
     "os_type": "Linux",
     "vm_size": "Standard_D2ds_v4",
