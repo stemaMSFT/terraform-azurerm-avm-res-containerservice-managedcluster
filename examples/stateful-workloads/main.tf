@@ -69,6 +69,50 @@ module "avm_res_containerregistry_registry" {
   admin_enabled       = true
 }
 
+resource "azurerm_container_registry_task" "this" {
+  container_registry_id = module.avm_res_containerregistry_registry.resource_id
+  name                  = "tasktest"
+
+  encoded_step {
+    task_content = base64encode(<<EOF
+version: v1.1.0
+steps:
+  - cmd: az login --identity
+  - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest
+
+EOF
+    )
+  }
+  identity {
+    type = "SystemAssigned" # Note this has to be a System Assigned Identity to work with private networking and `network_rule_bypass_option` set to `AzureServices`
+  }
+  platform {
+    os = "Linux"
+  }
+  registry_credential {
+    custom {
+      login_server = module.avm_res_containerregistry_registry.resource.login_server
+      identity     = "[system]"
+    }
+  }
+}
+
+resource "azurerm_container_registry_task_schedule_run_now" "this" {
+  container_registry_task_id = azurerm_container_registry_task.this.id
+
+  depends_on = [azurerm_role_assignment.container_registry_push_for_task]
+
+  lifecycle {
+    replace_triggered_by = [azurerm_container_registry_task.this]
+  }
+}
+
+resource "azurerm_role_assignment" "container_registry_push_for_task" {
+  principal_id         = azurerm_container_registry_task.this.identity[0].principal_id
+  scope                = module.avm_res_containerregistry_registry.resource_id
+  role_definition_name = "Contributor"
+}
+
 module "avm_res_storage_storageaccount" {
   for_each = { for key, pool in var.node_pools : key => pool if pool.name == "mongodb" }
 
