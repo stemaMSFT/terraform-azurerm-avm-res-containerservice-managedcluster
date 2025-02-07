@@ -79,8 +79,6 @@ version: v1.1.0
 steps:
   - cmd: az login --identity
   - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest
-  - cmd: bash echo "Hello, World!"
-
 EOF
     )
   }
