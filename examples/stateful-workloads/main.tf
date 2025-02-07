@@ -79,6 +79,7 @@ version: v1.1.0
 steps:
   - cmd: az login --identity
   - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest
+  - cmd: bash echo "Hello, World!"
 
 EOF
     )
@@ -89,28 +90,22 @@ EOF
   platform {
     os = "Linux"
   }
-  registry_credential {
-    custom {
-      login_server = module.avm_res_containerregistry_registry.resource.login_server
-      identity     = "[system]"
-    }
-  }
 }
 
 resource "azurerm_container_registry_task_schedule_run_now" "this" {
   container_registry_task_id = azurerm_container_registry_task.this.id
 
-  depends_on = [azurerm_role_assignment.container_registry_push_for_task]
+  depends_on = [azurerm_role_assignment.container_registry_import_for_task]
 
   lifecycle {
     replace_triggered_by = [azurerm_container_registry_task.this]
   }
 }
 
-resource "azurerm_role_assignment" "container_registry_push_for_task" {
+resource "azurerm_role_assignment" "container_registry_import_for_task" {
   principal_id         = azurerm_container_registry_task.this.identity[0].principal_id
   scope                = module.avm_res_containerregistry_registry.resource_id
-  role_definition_name = "Contributor"
+  role_definition_name = "Container Registry Data Importer and Data Reader"
 }
 
 module "avm_res_storage_storageaccount" {
@@ -151,7 +146,7 @@ module "default" {
   default_node_pool = {
     name                    = "default"
     node_count              = 3
-    vm_size                 = "Standard_D2ds_v4"
+    vm_size                 = "Standard_DS4_v2"
     os_type                 = "Linux"
     auto_upgrade_channel    = "stable"
     node_os_upgrade_channel = "NodeImage"
