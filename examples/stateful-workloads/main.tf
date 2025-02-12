@@ -16,7 +16,7 @@ terraform {
   }
 }
 
-provider "azurerm" {  
+provider "azurerm" {
   features {
     resource_group {
       prevent_deletion_if_contains_resources = false
@@ -90,7 +90,7 @@ module "avm_res_storage_storageaccount" {
   network_rules = {
     bypass         = ["AzureServices"]
     default_action = "Deny"
-    ip_rules       = ["${data.http.ip.response_body}"]
+    ip_rules       = [data.http.ip.response_body]
   }
   containers = {
     blob_container0 = {
@@ -188,7 +188,6 @@ module "avm_res_containerregistry_registry" {
 ## Section to create the Azure Container Registry task
 ######################################################################################################################
 resource "azurerm_container_registry_task" "this" {
-  depends_on            = [module.avm_res_containerregistry_registry]
   container_registry_id = module.avm_res_containerregistry_registry.resource_id
   name                  = "image-import-task"
 
@@ -201,15 +200,18 @@ resource "azurerm_container_registry_task" "this" {
   platform {
     os = "Linux"
   }
+
+  depends_on = [module.avm_res_containerregistry_registry]
 }
 
 ## Section to assign the role to the task identity
 ######################################################################################################################
 resource "azurerm_role_assignment" "container_registry_import_for_task" {
-  depends_on           = [azurerm_container_registry_task.this, module.avm_res_containerregistry_registry]
   principal_id         = azurerm_container_registry_task.this.identity[0].principal_id
   scope                = module.avm_res_containerregistry_registry.resource_id
   role_definition_name = "Container Registry Data Importer and Data Reader"
+
+  depends_on = [azurerm_container_registry_task.this, module.avm_res_containerregistry_registry]
 }
 
 ## Section to run the Azure Container Registry task
@@ -239,7 +241,7 @@ module "default" {
   default_node_pool = {
     name                    = "systempool"
     node_count              = 3
-    vm_size                 = "Standard_D2ds_v4"
+    vm_size                 = "Standard_DS4_v2"
     os_type                 = "Linux"
     auto_upgrade_channel    = "stable"
     node_os_upgrade_channel = "NodeImage"
@@ -266,8 +268,9 @@ module "default" {
 ## Section to assign the role to the kubelet identity
 ######################################################################################################################
 resource "azurerm_role_assignment" "acr_role_assignment" {
-  depends_on           = [module.avm_res_containerregistry_registry, module.default]
   principal_id         = module.default.kubelet_identity_id
   scope                = module.avm_res_containerregistry_registry.resource_id
   role_definition_name = "AcrPull"
+
+  depends_on = [module.avm_res_containerregistry_registry, module.default]
 }
