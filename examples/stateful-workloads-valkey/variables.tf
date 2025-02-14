@@ -1,15 +1,3 @@
-# variable "kv_secrets" {
-#   type        = map(string)
-#   default     = null
-#   description = "Map of secret names to their values"
-# }
-
-variable "acr_task_content" {
-  type        = string
-  default     = null
-  description = "The YAML content for the Azure Container Registry task."
-}
-
 variable "cluster_name" {
   type        = string
   default     = null
@@ -18,7 +6,7 @@ variable "cluster_name" {
 
 variable "location" {
   type        = string
-  default     = null
+  default     = "centralus"
   description = "The location of the resource group. Leaving this as null will select a random region"
 }
 
@@ -32,11 +20,11 @@ variable "node_pools" {
   }))
   default = {
     # This is an example of a node pool for a stateful workload with minimal configuration
-    stateful = {
-      name       = "stateful"
-      vm_size    = "Standard_DS4_v2"
-      node_count = 1
-      zones      = [1]
+    valkey = {
+      name       = "valkey"
+      vm_size    = "Standard_D2ds_v4"
+      node_count = 3
+      zones      = [1, 2, 3]
       os_type    = "Linux"
     }
   }
@@ -49,8 +37,8 @@ variable "resource_group_name" {
   description = "The name of the resource group"
 }
 
-variable "stateful_workload_type" {
+variable "valkey_password" {
   type        = string
-  default     = null
-  description = "The type of stateful workload to deploy"
+  default     = "" #generate password using openssl rand -base64 32 
+  description = "The password for the Valkey"
 }

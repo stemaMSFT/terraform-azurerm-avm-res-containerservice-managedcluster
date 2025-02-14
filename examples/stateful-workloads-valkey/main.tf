@@ -5,9 +5,13 @@ terraform {
       source  = "hashicorp/azurerm"
       version = ">= 4.0.0, < 5.0.0"
     }
-    http = {
-      source  = "hashicorp/http"
-      version = "~> 3.4"
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.5"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
     random = {
       source  = "hashicorp/random"
@@ -51,53 +55,18 @@ module "naming" {
   version = "~> 0.3"
 }
 
-# This is required for resource modules
+# Creating the resource group
 ######################################################################################################################
 resource "azurerm_resource_group" "this" {
   location = coalesce(var.location, module.regions.regions[random_integer.region_index.result].name)
   name     = coalesce(var.resource_group_name, module.naming.resource_group.name_unique)
 }
 
-# Section to get the current IP address for use in Storage and Key vault firewall rules
-######################################################################################################################
-data "http" "ip" {
-  url = "https://api.ipify.org/"
-  retry {
-    attempts     = 5
-    max_delay_ms = 1000
-    min_delay_ms = 500
-  }
-}
 
 # Section to get the current client config
 ######################################################################################################################
 
 data "azurerm_client_config" "current" {}
-
-## Section to create the storage account for storing mongodb backups
-######################################################################################################################
-module "avm_res_storage_storageaccount" {
-  count                         = var.stateful_workload_type == "mongodb" ? 1 : 0
-  source                        = "Azure/avm-res-storage-storageaccount/azurerm"
-  version                       = "0.4.0"
-  resource_group_name           = azurerm_resource_group.this.name
-  name                          = module.naming.storage_account.name_unique
-  location                      = azurerm_resource_group.this.location
-  account_tier                  = "Standard"
-  account_replication_type      = "ZRS"
-  shared_access_key_enabled     = true
-  public_network_access_enabled = true
-  network_rules = {
-    bypass         = ["AzureServices"]
-    default_action = "Deny"
-    ip_rules       = [data.http.ip.response_body]
-  }
-  containers = {
-    blob_container0 = {
-      name = "backups"
-    }
-  }
-}
 
 
 # Section to Create the Azure Key Vault 
@@ -110,79 +79,39 @@ module "avm_res_keyvault_vault" {
   tenant_id                      = data.azurerm_client_config.current.tenant_id
   resource_group_name            = azurerm_resource_group.this.name
   name                           = module.naming.key_vault.name_unique
-  public_network_access_enabled  = true
   legacy_access_policies_enabled = true
+  public_network_access_enabled  = true
+  network_acls                   = null
   legacy_access_policies = {
-    test = {
+    permissions = {
       object_id          = data.azurerm_client_config.current.object_id
-      secret_permissions = ["Get", "List", "Set", "Delete"]
+      secret_permissions = ["Get", "Set", "List"]
     }
-  }
-  network_acls = {
-    bypass         = "AzureServices"
-    default_action = "Deny"
-    ip_rules       = ["${data.http.ip.response_body}/32"]
   }
 }
 
-# ## Uncomment the following block to create the Azure Key Vault secrets later in the next steps
-# ######################################################################################################################
-# ######################################################################################################################
+resource "azurerm_key_vault_access_policy" "for_kv_secret_provider" {
+  key_vault_id = module.avm_res_keyvault_vault.resource_id
+  object_id    = module.default.key_vault_secrets_provider_object_id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  secret_permissions = [
+    "Get",
+    "List",
+    "Set",
+  ]
+}
 
-# ## Section to create the random passwords for the Key Vault
-# ######################################################################################################################
-
-# resource "random_password" "passwords" {
-#   for_each = { for key, value in var.kv_secrets : key => value if value == "random_password" }
-
-#   length  = 32
-#   special = false
-# }
-
-# ## Section to assign the Key Vault Administrator role to the current user
-# ######################################################################################################################
-
-# resource "azurerm_role_assignment" "keyvault_role_assignment" {
-#   depends_on           = [module.avm_res_keyvault_vault]
-#   principal_id         = data.azurerm_client_config.current.object_id
-#   scope                = module.avm_res_keyvault_vault.resource_id
-#   role_definition_name = "Key Vault Administrator"
-# }
-
-# ## Section to create the Azure Key Vault secrets
-# ######################################################################################################################
-
-# resource "azurerm_key_vault_secret" "this" {
-#   depends_on = [azurerm_role_assignment.keyvault_role_assignment]
-
-#   for_each = merge(
-#     var.stateful_workload_type == "mongodb" ? {
-#       "AZURE-STORAGE-ACCOUNT-KEY"  = module.avm_res_storage_storageaccount[0].resource.primary_access_key
-#       "AZURE-STORAGE-ACCOUNT-NAME" = module.avm_res_storage_storageaccount[0].resource.name
-#     } : {},
-#     { for key, value in var.kv_secrets : key => (value == "random_password" ? random_password.passwords[key].result : value) }
-
-#   )
-
-#   key_vault_id = module.avm_res_keyvault_vault.resource_id
-#   name         = each.key
-#   value        = each.value
-# }
-# ######################################################################################################################
-# ######################################################################################################################
-# ## End of block to create the Azure Key Vault secerets later in the next steps
 
 # ## Section to create the Azure Container Registry
 # ######################################################################################################################
 module "avm_res_containerregistry_registry" {
-  source                  = "Azure/avm-res-containerregistry-registry/azurerm"
-  version                 = "0.4.0"
-  resource_group_name     = azurerm_resource_group.this.name
-  name                    = module.naming.container_registry.name_unique
-  location                = azurerm_resource_group.this.location
-  sku                     = "Premium"
-  admin_enabled           = true
-  zone_redundancy_enabled = false
+  source              = "Azure/avm-res-containerregistry-registry/azurerm"
+  version             = "0.4.0"
+  resource_group_name = azurerm_resource_group.this.name
+  name                = module.naming.container_registry.name_unique
+  location            = azurerm_resource_group.this.location
+  sku                 = "Premium"
+  admin_enabled       = true
 }
 
 ## Section to create the Azure Container Registry task
@@ -192,7 +121,13 @@ resource "azurerm_container_registry_task" "this" {
   name                  = "image-import-task"
 
   encoded_step {
-    task_content = base64encode(var.acr_task_content)
+    task_content = base64encode(<<-EOF
+version: v1.1.0
+steps: 
+  - cmd: az login --identity
+  - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest
+EOF
+    )
   }
   identity {
     type = "SystemAssigned" # Note this has to be a System Assigned Identity to work with private networking and `network_rule_bypass_option` set to `AzureServices`
@@ -241,7 +176,7 @@ module "default" {
   default_node_pool = {
     name                    = "systempool"
     node_count              = 3
-    vm_size                 = "Standard_DS4_v2"
+    vm_size                 = "Standard_D2ds_v4"
     os_type                 = "Linux"
     auto_upgrade_channel    = "stable"
     node_os_upgrade_channel = "NodeImage"
@@ -263,6 +198,9 @@ module "default" {
   network_profile = {
     network_plugin = "azure"
   }
+  key_vault_secrets_provider = {
+    secret_rotation_enabled = true
+  }
 }
 
 ## Section to assign the role to the kubelet identity
@@ -274,3 +212,40 @@ resource "azurerm_role_assignment" "acr_role_assignment" {
 
   depends_on = [module.avm_res_containerregistry_registry, module.default]
 }
+
+resource "random_password" "requirepass" {
+  length           = 16
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+  special          = true
+}
+
+resource "random_password" "primaryauth" {
+  length           = 16
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+  special          = true
+}
+
+resource "local_file" "valkey_password_file" {
+  filename = "/tmp/valkey-password-file.conf"
+  content  = <<EOF
+requirepass  ${coalesce(var.valkey_password, random_password.requirepass.result)}
+primaryauth  ${coalesce(var.valkey_password, random_password.primaryauth.result)}
+EOF
+}
+
+resource "azurerm_key_vault_secret" "valkey_password_file" {
+  key_vault_id = module.avm_res_keyvault_vault.resource_id
+  name         = "valkey-password-file"
+  value        = local_file.valkey_password_file.content
+}
+
+resource "null_resource" "cleanup" {
+  triggers = {
+    always_run = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = "rm /tmp/valkey-password-file.conf"
+  }
+}
+
