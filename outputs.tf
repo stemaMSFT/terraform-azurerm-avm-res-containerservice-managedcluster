@@ -1,6 +1,6 @@
 output "key_vault_secrets_provider_object_id" {
   description = "The object ID of the key vault secrets provider."
-  value       = azurerm_kubernetes_cluster.this.key_vault_secrets_provider[0].secret_identity[0].object_id
+  value       = try(azurerm_kubernetes_cluster.this.key_vault_secrets_provider[0].secret_identity[0].object_id, null)
 }
 
 output "kubelet_identity_id" {
