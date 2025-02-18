@@ -1,3 +1,14 @@
+variable "acr_task_content" {
+  type        = string
+  default     = <<-EOF
+version: v1.1.0
+steps: 
+  - cmd: az login --identity
+  - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest
+EOF
+  description = "The content of the ACR task"
+}
+
 variable "cluster_name" {
   type        = string
   default     = null
@@ -8,6 +19,12 @@ variable "location" {
   type        = string
   default     = "centralus"
   description = "The location of the resource group. Leaving this as null will select a random region"
+}
+
+variable "mongodb_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable MongoDB"
 }
 
 variable "node_pools" {
@@ -35,6 +52,12 @@ variable "resource_group_name" {
   type        = string
   default     = null
   description = "The name of the resource group"
+}
+
+variable "valkey_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable Valkey"
 }
 
 variable "valkey_password" {
