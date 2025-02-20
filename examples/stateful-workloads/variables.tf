@@ -45,13 +45,6 @@ variable "node_pools" {
       node_count = 3
       zones      = [1, 2, 3]
       os_type    = "Linux"
-    },
-    mongodb = {
-      name       = "mongodb"
-      vm_size    = "Standard_D2ds_v4"
-      node_count = 3
-      zones      = [1, 2, 3]
-      os_type    = "Linux"
     }
   }
   description = "Optional. The additional node pools for the Kubernetes cluster."

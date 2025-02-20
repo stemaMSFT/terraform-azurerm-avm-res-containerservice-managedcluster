@@ -263,7 +263,7 @@ Description: The content of the ACR task
 
 Type: `string`
 
-Default: `"version: v1.1.0\nsteps: \n  - cmd: az login --identity\n  - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest\n"`
+Default: `"version: v1.1.0\nsteps:\n  - cmd: bash echo Waiting 10 seconds the propagation of the Container Registry Data Importer and Data Reader role\n  - cmd: bash sleep 10\n  - cmd: az login --identity\n  - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest\n"`
 
 ### <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name)
 
@@ -309,17 +309,6 @@ Default:
 
 ```json
 {
-  "mongodb": {
-    "name": "mongodb",
-    "node_count": 3,
-    "os_type": "Linux",
-    "vm_size": "Standard_D2ds_v4",
-    "zones": [
-      1,
-      2,
-      3
-    ]
-  },
   "valkey": {
     "name": "valkey",
     "node_count": 3,
