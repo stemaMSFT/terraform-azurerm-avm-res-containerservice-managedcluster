@@ -2,7 +2,9 @@ variable "acr_task_content" {
   type        = string
   default     = <<-EOF
 version: v1.1.0
-steps: 
+steps:
+  - cmd: bash echo Waiting 10 seconds the propagation of the Container Registry Data Importer and Data Reader role
+  - cmd: bash sleep 10
   - cmd: az login --identity
   - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest
 EOF
@@ -62,6 +64,6 @@ variable "valkey_enabled" {
 
 variable "valkey_password" {
   type        = string
-  default     = "" #generate password using openssl rand -base64 32 
+  default     = "" #generate password using openssl rand -base64 32
   description = "The password for the Valkey"
 }
