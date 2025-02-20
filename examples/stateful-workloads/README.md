@@ -309,6 +309,17 @@ Default:
 
 ```json
 {
+  "mongodb": {
+    "name": "mongodb",
+    "node_count": 3,
+    "os_type": "Linux",
+    "vm_size": "Standard_D2ds_v4",
+    "zones": [
+      1,
+      2,
+      3
+    ]
+  },
   "valkey": {
     "name": "valkey",
     "node_count": 3,

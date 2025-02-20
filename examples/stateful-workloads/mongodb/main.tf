@@ -17,9 +17,8 @@ module "avm_res_storage_storageaccount" {
     }
   }
 }
-
 resource "random_password" "passwords" {
-  for_each = { for key, value in var.kv_secrets : key => value if value == "random_password" }
+  count = var.kv_secrets != null ? length([for key, value in var.kv_secrets : key if value == "random_password"]) : 0
 
   length  = 32
   special = false
@@ -39,8 +38,18 @@ resource "azurerm_role_assignment" "keyvault_role_assignment" {
 ######################################################################################################################
 
 resource "azurerm_key_vault_secret" "this" {
+  depends_on = [azurerm_role_assignment.keyvault_role_assignment]
 
-  for_each = { for key, value in var.kv_secrets : key => value if value != "random_password" }
+  for_each = var.kv_secrets != null ? merge(
+    {
+      "AZURE-STORAGE-ACCOUNT-KEY"  = module.avm_res_storage_storageaccount.resource.primary_access_key
+      "AZURE-STORAGE-ACCOUNT-NAME" = module.avm_res_storage_storageaccount.resource.name
+    },
+    { for key, value in var.kv_secrets : key => (value == "random_password" ? random_password.passwords[key].result : value) }
+    ) : {
+    "AZURE-STORAGE-ACCOUNT-KEY"  = module.avm_res_storage_storageaccount.resource.primary_access_key
+    "AZURE-STORAGE-ACCOUNT-NAME" = module.avm_res_storage_storageaccount.resource.name
+  }
 
   key_vault_id = var.key_vault_id
   name         = each.key
