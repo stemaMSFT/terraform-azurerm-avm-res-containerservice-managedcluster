@@ -477,7 +477,7 @@ resource "azurerm_kubernetes_cluster" "this" {
     for_each = var.windows_profile != null ? [var.windows_profile] : []
 
     content {
-      admin_password = windows_profile.value.admin_password
+      admin_password = var.windows_profile_password
       admin_username = windows_profile.value.admin_username
       license        = windows_profile.value.license
 
