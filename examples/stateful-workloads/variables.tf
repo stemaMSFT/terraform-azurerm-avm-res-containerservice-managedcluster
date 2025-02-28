@@ -11,10 +11,28 @@ EOF
   description = "The content of the ACR task"
 }
 
+variable "acr_registry_name" {
+  type        = string
+  default     = null
+  description = "The name of the Azure Container Registry"
+}
+
 variable "cluster_name" {
   type        = string
   default     = null
   description = "The name of the Kubernetes cluster"
+}
+
+variable "identity_name" {
+  type        = string
+  default     = null
+  description = "The name of the user assigner identity"
+}
+
+variable "keyvault_name" {
+  type        = string
+  default     = null
+  description = "The name of the Azure Key Vault"
 }
 
 variable "location" {
@@ -66,4 +84,21 @@ variable "valkey_password" {
   type        = string
   default     = "" #generate password using openssl rand -base64 32
   description = "The password for the Valkey"
+}
+
+variable "mongodb_kv_secrets" {
+  description = "Map of secret names to their values"
+  type        = map(string)
+  default     = {}
+}
+
+variable "aks_mongodb_backup_storage_account_name" {
+  type        = string
+  default     = null
+  description = "The name of the backup storage account"
+}
+variable "aks_mongodb_backup_storage_container_name" {
+  type        = string
+  default     = null
+  description = "The name of the backup storage container"
 }

@@ -70,7 +70,7 @@ module "avm_res_keyvault_vault" {
   location                       = azurerm_resource_group.this.location
   tenant_id                      = data.azurerm_client_config.current.tenant_id
   resource_group_name            = azurerm_resource_group.this.name
-  name                           = module.naming.key_vault.name_unique
+  name                           = coalesce(var.keyvault_name, module.naming.key_vault.name_unique)
   legacy_access_policies_enabled = true
   public_network_access_enabled  = true
   network_acls                   = null
@@ -82,25 +82,13 @@ module "avm_res_keyvault_vault" {
   }
 }
 
-resource "azurerm_key_vault_access_policy" "for_kv_secret_provider" {
-  key_vault_id = module.avm_res_keyvault_vault.resource_id
-  object_id    = module.default.key_vault_secrets_provider_object_id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  secret_permissions = [
-    "Get",
-    "List",
-    "Set",
-  ]
-}
-
-
 # ## Section to create the Azure Container Registry
 # ######################################################################################################################
 module "avm_res_containerregistry_registry" {
   source              = "Azure/avm-res-containerregistry-registry/azurerm"
   version             = "0.4.0"
   resource_group_name = azurerm_resource_group.this.name
-  name                = module.naming.container_registry.name_unique
+  name                = coalesce(var.acr_registry_name, module.naming.container_registry.name_unique)
   location            = azurerm_resource_group.this.location
   sku                 = "Premium"
   admin_enabled       = true
@@ -157,6 +145,9 @@ module "default" {
   local_account_disabled    = false
   node_os_channel_upgrade   = "NodeImage"
   automatic_upgrade_channel = "stable"
+  managed_identities = {
+    system_assigned = true
+  }
 
   default_node_pool = {
     name                    = "systempool"
@@ -211,8 +202,10 @@ module "mongodb" {
   count                = var.mongodb_enabled ? 1 : 0
   source               = "./mongodb"
   key_vault_id         = module.avm_res_keyvault_vault.resource_id
-  storage_account_name = module.naming.storage_account.name_unique
+  storage_account_name = coalesce(var.aks_mongodb_backup_storage_account_name, module.naming.storage_account.name_unique)
   resource_group_name  = azurerm_resource_group.this.name
   location             = azurerm_resource_group.this.location
   principal_id         = data.azurerm_client_config.current.object_id
+  mongodb_kv_secrets   = var.mongodb_kv_secrets
+  identity_name        = coalesce(var.identity_name, module.naming.user_assigned_identity.name_unique)
 }

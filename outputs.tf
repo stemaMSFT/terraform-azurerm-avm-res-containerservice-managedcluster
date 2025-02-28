@@ -33,3 +33,8 @@ output "resource_id" {
   description = "Resource ID of the Kubernetes cluster."
   value       = azurerm_kubernetes_cluster.this.id
 }
+
+output "oidc_issuer_url" {
+  description = "The OIDC issuer URL of the Kubernetes cluster."
+  value       = azurerm_kubernetes_cluster.this.oidc_issuer_url
+}
