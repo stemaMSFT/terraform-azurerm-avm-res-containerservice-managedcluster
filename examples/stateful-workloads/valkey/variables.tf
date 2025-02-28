@@ -4,7 +4,8 @@ variable "key_vault_id" {
 
 }
 variable "valkey_password" {
-  type = string
+  type      = string
+  sensitive = true
   #generate password using openssl rand -base64 32 
   description = "The password for the Valkey"
 }

@@ -157,6 +157,9 @@ module "default" {
   local_account_disabled    = false
   node_os_channel_upgrade   = "NodeImage"
   automatic_upgrade_channel = "stable"
+  managed_identities = {
+    system_assigned = true
+  }
 
   default_node_pool = {
     name                    = "systempool"
