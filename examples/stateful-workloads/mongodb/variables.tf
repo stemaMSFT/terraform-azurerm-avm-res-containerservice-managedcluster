@@ -29,5 +29,20 @@ variable "resource_group_name" {
 }
 variable "identity_name" {
   type        = string
-  description = "The name of the resource group"
+  description = "The name of the identity"
+}
+
+variable "mongodb_namespace" {
+  type        = string
+  description = "The name of the mongodb namespace to create"
+}
+
+variable "service_account_name" {
+  type        = string
+  description = "The name of the service account to create"
+}
+
+variable "oidc_issuer_url" {
+  type        = string
+  description = "The name of the service account to create"
 }

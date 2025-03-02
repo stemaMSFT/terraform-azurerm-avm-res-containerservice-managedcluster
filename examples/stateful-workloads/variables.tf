@@ -89,7 +89,7 @@ variable "valkey_password" {
 variable "mongodb_kv_secrets" {
   description = "Map of secret names to their values"
   type        = map(string)
-  default     = {}
+  default     = null
 }
 
 variable "aks_mongodb_backup_storage_account_name" {
@@ -101,4 +101,14 @@ variable "aks_mongodb_backup_storage_container_name" {
   type        = string
   default     = null
   description = "The name of the backup storage container"
+}
+
+variable "mongodb_namespace" {
+  type        = string
+  description = "The name of the mongodb namespace to create"
+}
+
+variable "service_account_name" {
+  type        = string
+  description = "The name of the service account to create"
 }

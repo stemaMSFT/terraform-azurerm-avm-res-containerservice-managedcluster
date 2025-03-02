@@ -189,8 +189,8 @@ resource "azurerm_role_assignment" "acr_role_assignment" {
   depends_on = [module.avm_res_containerregistry_registry, module.default]
 }
 
-
-
+## Section to deploy valkey cluster only when var.valkey_enabled is set to true
+######################################################################################################################
 module "valkey" {
   count           = var.valkey_enabled ? 1 : 0
   source          = "./valkey"
@@ -198,6 +198,8 @@ module "valkey" {
   valkey_password = var.valkey_password
 }
 
+## Section to deploy MongoDB cluster only when var.mongodb_enabled is set to true
+######################################################################################################################
 module "mongodb" {
   count                = var.mongodb_enabled ? 1 : 0
   source               = "./mongodb"
@@ -208,4 +210,7 @@ module "mongodb" {
   principal_id         = data.azurerm_client_config.current.object_id
   mongodb_kv_secrets   = var.mongodb_kv_secrets
   identity_name        = coalesce(var.identity_name, module.naming.user_assigned_identity.name_unique)
+  mongodb_namespace    = var.mongodb_namespace
+  service_account_name = var.service_account_name
+  oidc_issuer_url      = module.default.oidc_issuer_url
 }
