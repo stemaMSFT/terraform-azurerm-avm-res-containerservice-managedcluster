@@ -22,6 +22,11 @@ output "nodepool_resource_ids" {
   }
 }
 
+output "oidc_issuer_url" {
+  description = "The OIDC issuer URL of the Kubernetes cluster."
+  value       = azurerm_kubernetes_cluster.this.oidc_issuer_url
+}
+
 output "private_endpoints" {
   description = <<DESCRIPTION
   A map of the private endpoints created.

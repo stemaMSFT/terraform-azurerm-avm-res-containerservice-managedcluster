@@ -10,6 +10,16 @@ variable "valkey_password" {
   description = "The password for the Valkey"
 }
 
+variable "object_id" {
+  type        = string
+  description = "The object ID of the service principal"
+}
+
+variable "tenant_id" {
+  type        = string
+  description = "The tenant ID of the service principal"
+}
+
 
 
 

@@ -1,3 +1,9 @@
+variable "acr_registry_name" {
+  type        = string
+  default     = null
+  description = "The name of the Azure Container Registry"
+}
+
 variable "acr_task_content" {
   type        = string
   default     = <<-EOF
@@ -11,10 +17,28 @@ EOF
   description = "The content of the ACR task"
 }
 
+variable "aks_mongodb_backup_storage_account_name" {
+  type        = string
+  default     = null
+  description = "The name of the backup storage account"
+}
+
 variable "cluster_name" {
   type        = string
   default     = null
   description = "The name of the Kubernetes cluster"
+}
+
+variable "identity_name" {
+  type        = string
+  default     = null
+  description = "The name of the user assigner identity"
+}
+
+variable "keyvault_name" {
+  type        = string
+  default     = null
+  description = "The name of the Azure Key Vault"
 }
 
 variable "location" {
@@ -27,6 +51,18 @@ variable "mongodb_enabled" {
   type        = bool
   default     = false
   description = "Enable MongoDB"
+}
+
+variable "mongodb_kv_secrets" {
+  type        = map(string)
+  default     = null
+  description = "Map of secret names to their values"
+}
+
+variable "mongodb_namespace" {
+  type        = string
+  default     = null
+  description = "The name of the mongodb namespace to create"
 }
 
 variable "node_pools" {
@@ -54,6 +90,12 @@ variable "resource_group_name" {
   type        = string
   default     = null
   description = "The name of the resource group"
+}
+
+variable "service_account_name" {
+  type        = string
+  default     = null
+  description = "The name of the service account to create"
 }
 
 variable "valkey_enabled" {
