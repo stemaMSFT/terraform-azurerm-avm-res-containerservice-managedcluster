@@ -24,7 +24,7 @@ output "storage_account_name" {
 
 output "storage_account_key" {
   sensitive = true
-  value = module.avm_res_storage_storageaccount.resource.primary_access_key
+  value     = module.avm_res_storage_storageaccount.resource.primary_access_key
 }
 
 

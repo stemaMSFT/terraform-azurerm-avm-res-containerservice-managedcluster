@@ -76,7 +76,7 @@ module "avm_res_keyvault_vault" {
   location                       = azurerm_resource_group.this.location
   tenant_id                      = data.azurerm_client_config.current.tenant_id
   resource_group_name            = azurerm_resource_group.this.name
-  name                           = module.naming.key_vault.name_unique
+  name                           = coalesce(var.keyvault_name, module.naming.key_vault.name_unique)
   legacy_access_policies_enabled = true
   public_network_access_enabled  = true
   network_acls                   = null
@@ -88,25 +88,13 @@ module "avm_res_keyvault_vault" {
   }
 }
 
-resource "azurerm_key_vault_access_policy" "for_kv_secret_provider" {
-  key_vault_id = module.avm_res_keyvault_vault.resource_id
-  object_id    = module.default.key_vault_secrets_provider_object_id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  secret_permissions = [
-    "Get",
-    "List",
-    "Set",
-  ]
-}
-
-
 # ## Section to create the Azure Container Registry
 # ######################################################################################################################
 module "avm_res_containerregistry_registry" {
   source              = "Azure/avm-res-containerregistry-registry/azurerm"
   version             = "0.4.0"
   resource_group_name = azurerm_resource_group.this.name
-  name                = module.naming.container_registry.name_unique
+  name                = coalesce(var.acr_registry_name, module.naming.container_registry.name_unique)
   location            = azurerm_resource_group.this.location
   sku                 = "Premium"
   admin_enabled       = true
@@ -163,6 +151,9 @@ module "default" {
   local_account_disabled    = false
   node_os_channel_upgrade   = "NodeImage"
   automatic_upgrade_channel = "stable"
+  managed_identities = {
+    system_assigned = true
+  }
 
   default_node_pool = {
     name                    = "systempool"
@@ -204,23 +195,32 @@ resource "azurerm_role_assignment" "acr_role_assignment" {
   depends_on = [module.avm_res_containerregistry_registry, module.default]
 }
 
-
-
+## Section to deploy valkey cluster only when var.valkey_enabled is set to true
+######################################################################################################################
 module "valkey" {
   count           = var.valkey_enabled ? 1 : 0
   source          = "./valkey"
   key_vault_id    = module.avm_res_keyvault_vault.resource_id
   valkey_password = var.valkey_password
+  object_id       = module.default.key_vault_secrets_provider_object_id
+  tenant_id       = data.azurerm_client_config.current.tenant_id
 }
 
+## Section to deploy MongoDB cluster only when var.mongodb_enabled is set to true
+######################################################################################################################
 module "mongodb" {
   count                = var.mongodb_enabled ? 1 : 0
   source               = "./mongodb"
   key_vault_id         = module.avm_res_keyvault_vault.resource_id
-  storage_account_name = module.naming.storage_account.name_unique
+  storage_account_name = coalesce(var.aks_mongodb_backup_storage_account_name, module.naming.storage_account.name_unique)
   resource_group_name  = azurerm_resource_group.this.name
   location             = azurerm_resource_group.this.location
   principal_id         = data.azurerm_client_config.current.object_id
+  mongodb_kv_secrets   = var.mongodb_kv_secrets
+  identity_name        = coalesce(var.identity_name, module.naming.user_assigned_identity.name_unique)
+  mongodb_namespace    = var.mongodb_namespace
+  service_account_name = var.service_account_name
+  oidc_issuer_url      = module.default.oidc_issuer_url
 }
 ```
 
@@ -241,7 +241,6 @@ The following resources are used by this module:
 
 - [azurerm_container_registry_task.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_registry_task) (resource)
 - [azurerm_container_registry_task_schedule_run_now.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_registry_task_schedule_run_now) (resource)
-- [azurerm_key_vault_access_policy.for_kv_secret_provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_access_policy) (resource)
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_role_assignment.acr_role_assignment](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [azurerm_role_assignment.container_registry_import_for_task](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
@@ -257,6 +256,14 @@ No required inputs.
 
 The following input variables are optional (have default values):
 
+### <a name="input_acr_registry_name"></a> [acr\_registry\_name](#input\_acr\_registry\_name)
+
+Description: The name of the Azure Container Registry
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_acr_task_content"></a> [acr\_task\_content](#input\_acr\_task\_content)
 
 Description: The content of the ACR task
@@ -265,9 +272,33 @@ Type: `string`
 
 Default: `"version: v1.1.0\nsteps:\n  - cmd: bash echo Waiting 10 seconds the propagation of the Container Registry Data Importer and Data Reader role\n  - cmd: bash sleep 10\n  - cmd: az login --identity\n  - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest\n"`
 
+### <a name="input_aks_mongodb_backup_storage_account_name"></a> [aks\_mongodb\_backup\_storage\_account\_name](#input\_aks\_mongodb\_backup\_storage\_account\_name)
+
+Description: The name of the backup storage account
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name)
 
 Description: The name of the Kubernetes cluster
+
+Type: `string`
+
+Default: `null`
+
+### <a name="input_identity_name"></a> [identity\_name](#input\_identity\_name)
+
+Description: The name of the user assigner identity
+
+Type: `string`
+
+Default: `null`
+
+### <a name="input_keyvault_name"></a> [keyvault\_name](#input\_keyvault\_name)
+
+Description: The name of the Azure Key Vault
 
 Type: `string`
 
@@ -288,6 +319,22 @@ Description: Enable MongoDB
 Type: `bool`
 
 Default: `false`
+
+### <a name="input_mongodb_kv_secrets"></a> [mongodb\_kv\_secrets](#input\_mongodb\_kv\_secrets)
+
+Description: Map of secret names to their values
+
+Type: `map(string)`
+
+Default: `null`
+
+### <a name="input_mongodb_namespace"></a> [mongodb\_namespace](#input\_mongodb\_namespace)
+
+Description: The name of the mongodb namespace to create
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_node_pools"></a> [node\_pools](#input\_node\_pools)
 
@@ -331,6 +378,14 @@ Type: `string`
 
 Default: `null`
 
+### <a name="input_service_account_name"></a> [service\_account\_name](#input\_service\_account\_name)
+
+Description: The name of the service account to create
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_valkey_enabled"></a> [valkey\_enabled](#input\_valkey\_enabled)
 
 Description: Enable Valkey
@@ -349,7 +404,67 @@ Default: `""`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_acr_registry_id"></a> [acr\_registry\_id](#output\_acr\_registry\_id)
+
+Description: n/a
+
+### <a name="output_acr_registry_name"></a> [acr\_registry\_name](#output\_acr\_registry\_name)
+
+Description: n/a
+
+### <a name="output_aks_cluster_name"></a> [aks\_cluster\_name](#output\_aks\_cluster\_name)
+
+Description: n/a
+
+### <a name="output_aks_kubelet_identity_id"></a> [aks\_kubelet\_identity\_id](#output\_aks\_kubelet\_identity\_id)
+
+Description: n/a
+
+### <a name="output_aks_nodepool_resource_ids"></a> [aks\_nodepool\_resource\_ids](#output\_aks\_nodepool\_resource\_ids)
+
+Description: n/a
+
+### <a name="output_aks_oidc_issuer_url"></a> [aks\_oidc\_issuer\_url](#output\_aks\_oidc\_issuer\_url)
+
+Description: n/a
+
+### <a name="output_identity_name"></a> [identity\_name](#output\_identity\_name)
+
+Description: n/a
+
+### <a name="output_identity_name_client_id"></a> [identity\_name\_client\_id](#output\_identity\_name\_client\_id)
+
+Description: n/a
+
+### <a name="output_identity_name_id"></a> [identity\_name\_id](#output\_identity\_name\_id)
+
+Description: n/a
+
+### <a name="output_identity_name_principal_id"></a> [identity\_name\_principal\_id](#output\_identity\_name\_principal\_id)
+
+Description: n/a
+
+### <a name="output_identity_name_tenant_id"></a> [identity\_name\_tenant\_id](#output\_identity\_name\_tenant\_id)
+
+Description: n/a
+
+### <a name="output_key_vault_id"></a> [key\_vault\_id](#output\_key\_vault\_id)
+
+Description: n/a
+
+### <a name="output_key_vault_uri"></a> [key\_vault\_uri](#output\_key\_vault\_uri)
+
+Description: n/a
+
+### <a name="output_storage_account_key"></a> [storage\_account\_key](#output\_storage\_account\_key)
+
+Description: n/a
+
+### <a name="output_storage_account_name"></a> [storage\_account\_name](#output\_storage\_account\_name)
+
+Description: n/a
 
 ## Modules
 

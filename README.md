@@ -1205,6 +1205,10 @@ Description: Name of the Kubernetes cluster.
 
 Description: A map of nodepool keys to resource ids.
 
+### <a name="output_oidc_issuer_url"></a> [oidc\_issuer\_url](#output\_oidc\_issuer\_url)
+
+Description: The OIDC issuer URL of the Kubernetes cluster.
+
 ### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
 
 Description:   A map of the private endpoints created.

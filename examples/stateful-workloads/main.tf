@@ -196,6 +196,8 @@ module "valkey" {
   source          = "./valkey"
   key_vault_id    = module.avm_res_keyvault_vault.resource_id
   valkey_password = var.valkey_password
+  object_id       = module.default.key_vault_secrets_provider_object_id
+  tenant_id       = data.azurerm_client_config.current.tenant_id
 }
 
 ## Section to deploy MongoDB cluster only when var.mongodb_enabled is set to true

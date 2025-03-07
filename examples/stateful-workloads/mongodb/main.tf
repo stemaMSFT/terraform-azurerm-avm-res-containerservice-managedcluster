@@ -43,7 +43,7 @@ resource "azurerm_key_vault_secret" "this" {
     ) : {
     "AZURE-STORAGE-ACCOUNT-KEY"  = module.avm_res_storage_storageaccount.resource.primary_access_key
     "AZURE-STORAGE-ACCOUNT-NAME" = module.avm_res_storage_storageaccount.resource.name
-    }
+  }
 
   key_vault_id = var.key_vault_id
   name         = each.key
@@ -53,7 +53,7 @@ resource "azurerm_key_vault_secret" "this" {
 ## Section to create the user-assigned identity 
 ######################################################################################################################
 resource "azurerm_user_assigned_identity" "this" {
-  location             =   var.location
+  location            = var.location
   name                = var.identity_name
   resource_group_name = var.resource_group_name
 }

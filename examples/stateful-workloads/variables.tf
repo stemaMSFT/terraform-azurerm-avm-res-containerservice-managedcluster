@@ -1,3 +1,9 @@
+variable "acr_registry_name" {
+  type        = string
+  default     = null
+  description = "The name of the Azure Container Registry"
+}
+
 variable "acr_task_content" {
   type        = string
   default     = <<-EOF
@@ -11,10 +17,10 @@ EOF
   description = "The content of the ACR task"
 }
 
-variable "acr_registry_name" {
+variable "aks_mongodb_backup_storage_account_name" {
   type        = string
   default     = null
-  description = "The name of the Azure Container Registry"
+  description = "The name of the backup storage account"
 }
 
 variable "cluster_name" {
@@ -47,6 +53,18 @@ variable "mongodb_enabled" {
   description = "Enable MongoDB"
 }
 
+variable "mongodb_kv_secrets" {
+  type        = map(string)
+  default     = null
+  description = "Map of secret names to their values"
+}
+
+variable "mongodb_namespace" {
+  type        = string
+  default     = null
+  description = "The name of the mongodb namespace to create"
+}
+
 variable "node_pools" {
   type = map(object({
     name       = string
@@ -74,6 +92,12 @@ variable "resource_group_name" {
   description = "The name of the resource group"
 }
 
+variable "service_account_name" {
+  type        = string
+  default     = null
+  description = "The name of the service account to create"
+}
+
 variable "valkey_enabled" {
   type        = bool
   default     = false
@@ -84,31 +108,4 @@ variable "valkey_password" {
   type        = string
   default     = "" #generate password using openssl rand -base64 32
   description = "The password for the Valkey"
-}
-
-variable "mongodb_kv_secrets" {
-  description = "Map of secret names to their values"
-  type        = map(string)
-  default     = null
-}
-
-variable "aks_mongodb_backup_storage_account_name" {
-  type        = string
-  default     = null
-  description = "The name of the backup storage account"
-}
-variable "aks_mongodb_backup_storage_container_name" {
-  type        = string
-  default     = null
-  description = "The name of the backup storage container"
-}
-
-variable "mongodb_namespace" {
-  type        = string
-  description = "The name of the mongodb namespace to create"
-}
-
-variable "service_account_name" {
-  type        = string
-  description = "The name of the service account to create"
 }
