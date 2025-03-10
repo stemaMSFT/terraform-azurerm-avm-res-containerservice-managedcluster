@@ -12,7 +12,7 @@ steps:
   - cmd: bash echo Waiting 10 seconds the propagation of the Container Registry Data Importer and Data Reader role
   - cmd: bash sleep 10
   - cmd: az login --identity
-  - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest
+  - cmd: az acr import --name $RegistryName --source acrforavmexamples.azurecr.io/valkey:latest --image valkey:latest
 EOF
   description = "The content of the ACR task"
 }
@@ -43,7 +43,7 @@ variable "keyvault_name" {
 
 variable "location" {
   type        = string
-  default     = "centralus"
+  default     = "eastus"
   description = "The location of the resource group. Leaving this as null will select a random region"
 }
 
@@ -79,7 +79,7 @@ variable "node_pools" {
       name       = "valkey"
       vm_size    = "Standard_D2ds_v4"
       node_count = 3
-      zones      = [1, 2, 3]
+      zones      = [2, 3]
       os_type    = "Linux"
     }
   }

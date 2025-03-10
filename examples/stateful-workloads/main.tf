@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = ">= 4.0.0, < 5.0.0"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
-    }
   }
 }
 
@@ -19,25 +15,6 @@ provider "azurerm" {
     }
   }
 }
-
-
-## Section to provide a random Azure region for the resource group, This allows us to randomize the region for the resource group.
-######################################################################################################################
-
-module "regions" {
-  source  = "Azure/avm-utl-regions/azurerm"
-  version = "~> 0.1"
-}
-
-
-## This allows us to randomize the region for the resource group.
-######################################################################################################################
-
-resource "random_integer" "region_index" {
-  max = length(module.regions.regions) - 1
-  min = 0
-}
-
 
 # This ensures we have unique CAF compliant names for our resources.
 ######################################################################################################################
@@ -50,7 +27,7 @@ module "naming" {
 # Creating the resource group
 ######################################################################################################################
 resource "azurerm_resource_group" "this" {
-  location = coalesce(var.location, module.regions.regions[random_integer.region_index.result].name)
+  location = coalesce(var.location, "eastus")
   name     = coalesce(var.resource_group_name, module.naming.resource_group.name_unique)
 }
 
@@ -91,7 +68,7 @@ module "avm_res_containerregistry_registry" {
   name                = coalesce(var.acr_registry_name, module.naming.container_registry.name_unique)
   location            = azurerm_resource_group.this.location
   sku                 = "Premium"
-  admin_enabled       = true
+  admin_enabled       = false
 }
 
 ## Section to create the Azure Container Registry task
@@ -156,7 +133,7 @@ module "default" {
     os_type                 = "Linux"
     auto_upgrade_channel    = "stable"
     node_os_upgrade_channel = "NodeImage"
-    zones                   = [1, 2, 3]
+    zones                   = [2, 3]
 
     addon_profile = {
       azure_key_vault_secrets_provider = {

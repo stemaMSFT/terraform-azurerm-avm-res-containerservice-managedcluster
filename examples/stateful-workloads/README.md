@@ -11,10 +11,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = ">= 4.0.0, < 5.0.0"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
-    }
   }
 }
 
@@ -25,25 +21,6 @@ provider "azurerm" {
     }
   }
 }
-
-
-## Section to provide a random Azure region for the resource group, This allows us to randomize the region for the resource group.
-######################################################################################################################
-
-module "regions" {
-  source  = "Azure/avm-utl-regions/azurerm"
-  version = "~> 0.1"
-}
-
-
-## This allows us to randomize the region for the resource group.
-######################################################################################################################
-
-resource "random_integer" "region_index" {
-  max = length(module.regions.regions) - 1
-  min = 0
-}
-
 
 # This ensures we have unique CAF compliant names for our resources.
 ######################################################################################################################
@@ -56,7 +33,7 @@ module "naming" {
 # Creating the resource group
 ######################################################################################################################
 resource "azurerm_resource_group" "this" {
-  location = coalesce(var.location, module.regions.regions[random_integer.region_index.result].name)
+  location = coalesce(var.location, "eastus")
   name     = coalesce(var.resource_group_name, module.naming.resource_group.name_unique)
 }
 
@@ -97,7 +74,7 @@ module "avm_res_containerregistry_registry" {
   name                = coalesce(var.acr_registry_name, module.naming.container_registry.name_unique)
   location            = azurerm_resource_group.this.location
   sku                 = "Premium"
-  admin_enabled       = true
+  admin_enabled       = false
 }
 
 ## Section to create the Azure Container Registry task
@@ -162,7 +139,7 @@ module "default" {
     os_type                 = "Linux"
     auto_upgrade_channel    = "stable"
     node_os_upgrade_channel = "NodeImage"
-    zones                   = [1, 2, 3]
+    zones                   = [2, 3]
 
     addon_profile = {
       azure_key_vault_secrets_provider = {
@@ -233,8 +210,6 @@ The following requirements are needed by this module:
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 4.0.0, < 5.0.0)
 
-- <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
-
 ## Resources
 
 The following resources are used by this module:
@@ -244,7 +219,6 @@ The following resources are used by this module:
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_role_assignment.acr_role_assignment](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [azurerm_role_assignment.container_registry_import_for_task](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
-- [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
 - [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
 
 <!-- markdownlint-disable MD013 -->
@@ -270,7 +244,7 @@ Description: The content of the ACR task
 
 Type: `string`
 
-Default: `"version: v1.1.0\nsteps:\n  - cmd: bash echo Waiting 10 seconds the propagation of the Container Registry Data Importer and Data Reader role\n  - cmd: bash sleep 10\n  - cmd: az login --identity\n  - cmd: az acr import --name $RegistryName --source docker.io/valkey/valkey:latest --image valkey:latest\n"`
+Default: `"version: v1.1.0\nsteps:\n  - cmd: bash echo Waiting 10 seconds the propagation of the Container Registry Data Importer and Data Reader role\n  - cmd: bash sleep 10\n  - cmd: az login --identity\n  - cmd: az acr import --name $RegistryName --source acrforavmexamples.azurecr.io/valkey:latest --image valkey:latest\n"`
 
 ### <a name="input_aks_mongodb_backup_storage_account_name"></a> [aks\_mongodb\_backup\_storage\_account\_name](#input\_aks\_mongodb\_backup\_storage\_account\_name)
 
@@ -310,7 +284,7 @@ Description: The location of the resource group. Leaving this as null will selec
 
 Type: `string`
 
-Default: `"centralus"`
+Default: `"eastus"`
 
 ### <a name="input_mongodb_enabled"></a> [mongodb\_enabled](#input\_mongodb\_enabled)
 
@@ -362,7 +336,6 @@ Default:
     "os_type": "Linux",
     "vm_size": "Standard_D2ds_v4",
     "zones": [
-      1,
       2,
       3
     ]
@@ -499,12 +472,6 @@ Version:
 Source: Azure/naming/azurerm
 
 Version: ~> 0.3
-
-### <a name="module_regions"></a> [regions](#module\_regions)
-
-Source: Azure/avm-utl-regions/azurerm
-
-Version: ~> 0.1
 
 ### <a name="module_valkey"></a> [valkey](#module\_valkey)
 

@@ -26,20 +26,29 @@ provider "azurerm" {
   }
 }
 
-
-## Section to provide a random Azure region for the resource group
-# This allows us to randomize the region for the resource group.
-module "regions" {
-  source  = "Azure/avm-utl-regions/azurerm"
-  version = "~> 0.1"
+locals {
+  locations = [
+    "eastus",
+    "eastus2",
+    "westus2",
+    "centralus",
+    "westeurope",
+    "northeurope",
+    "southeastasia",
+    "japaneast",
+  ]
 }
 
 # This allows us to randomize the region for the resource group.
 resource "random_integer" "region_index" {
-  max = length(module.regions.regions) - 1
+  max = length(local.locations) - 1
   min = 0
 }
 ## End of section to provide a random Azure region for the resource group
+
+locals {
+  location = local.locations[random_integer.region_index.result]
+}
 
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
@@ -49,7 +58,7 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = module.regions.regions[random_integer.region_index.result].name
+  location = local.location
   name     = module.naming.resource_group.name_unique
 }
 
@@ -145,7 +154,6 @@ module "private" {
   default_node_pool = {
     name                         = "default"
     vm_size                      = "Standard_DS2_v2"
-    zones                        = [3]
     auto_scaling_enabled         = true
     max_count                    = 3
     max_pods                     = 30
@@ -162,7 +170,6 @@ module "private" {
     unp1 = {
       name                 = "userpool1"
       vm_size              = "Standard_DS2_v2"
-      zones                = [3]
       auto_scaling_enabled = true
       max_count            = 3
       max_pods             = 30
@@ -177,7 +184,6 @@ module "private" {
     unp2 = {
       name                 = "userpool2"
       vm_size              = "Standard_DS2_v2"
-      zones                = [3]
       auto_scaling_enabled = true
       max_count            = 3
       max_pods             = 30
@@ -250,12 +256,6 @@ Version: ~> 0.3
 Source: ../..
 
 Version:
-
-### <a name="module_regions"></a> [regions](#module\_regions)
-
-Source: Azure/avm-utl-regions/azurerm
-
-Version: ~> 0.1
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
