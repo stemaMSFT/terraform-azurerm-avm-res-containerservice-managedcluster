@@ -1189,6 +1189,10 @@ Default: `false`
 
 The following outputs are exported:
 
+### <a name="output_key_vault_secrets_provider_object_id"></a> [key\_vault\_secrets\_provider\_object\_id](#output\_key\_vault\_secrets\_provider\_object\_id)
+
+Description: The object ID of the key vault secrets provider.
+
 ### <a name="output_kubelet_identity_id"></a> [kubelet\_identity\_id](#output\_kubelet\_identity\_id)
 
 Description: The identity ID of the kubelet identity.
@@ -1200,6 +1204,10 @@ Description: Name of the Kubernetes cluster.
 ### <a name="output_nodepool_resource_ids"></a> [nodepool\_resource\_ids](#output\_nodepool\_resource\_ids)
 
 Description: A map of nodepool keys to resource ids.
+
+### <a name="output_oidc_issuer_url"></a> [oidc\_issuer\_url](#output\_oidc\_issuer\_url)
+
+Description: The OIDC issuer URL of the Kubernetes cluster.
 
 ### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
 
