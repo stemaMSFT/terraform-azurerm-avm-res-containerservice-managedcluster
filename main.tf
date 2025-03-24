@@ -91,9 +91,9 @@ resource "azurerm_kubernetes_cluster" "this" {
         for_each = var.default_node_pool.linux_os_config != null ? [var.default_node_pool.linux_os_config] : []
 
         content {
-          swap_file_size_mb             = linux_os_config.value.swap_file_size_mb
-          transparent_huge_page_defrag  = linux_os_config.value.transparent_huge_page_defrag
-          transparent_huge_page_enabled = linux_os_config.value.transparent_huge_page_enabled
+          swap_file_size_mb             = linux_os_config.value.swap_file_size_mb != null ? linux_os_config.value.swap_file_size_mb : null
+          transparent_huge_page_defrag  = linux_os_config.value.transparent_huge_page_defrag != null ? linux_os_config.value.transparent_huge_page_defrag : null
+          transparent_huge_page_enabled = linux_os_config.value.transparent_huge_page_enabled != null ? linux_os_config.value.transparent_huge_page_enabled : null
 
           dynamic "sysctl_config" {
             for_each = var.default_node_pool.linux_os_config.sysctl_config != null ? [var.default_node_pool.linux_os_config.sysctl_config] : []
@@ -420,9 +420,9 @@ resource "azurerm_kubernetes_cluster" "this" {
 
     content {
       mode                             = service_mesh_profile.value.mode
-      revisions                        = service_mesh_profile.value.revisions
       external_ingress_gateway_enabled = service_mesh_profile.value.external_ingress_gateway_enabled
       internal_ingress_gateway_enabled = service_mesh_profile.value.internal_ingress_gateway_enabled
+      revisions                        = service_mesh_profile.value.revisions
 
       dynamic "certificate_authority" {
         for_each = service_mesh_profile.value.certificate_authority != null ? [service_mesh_profile.value.certificate_authority] : []
@@ -477,8 +477,8 @@ resource "azurerm_kubernetes_cluster" "this" {
     for_each = var.windows_profile != null ? [var.windows_profile] : []
 
     content {
-      admin_password = var.windows_profile_password
       admin_username = windows_profile.value.admin_username
+      admin_password = var.windows_profile_password
       license        = windows_profile.value.license
 
       dynamic "gmsa" {
