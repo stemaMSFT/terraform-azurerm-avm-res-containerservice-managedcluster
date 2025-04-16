@@ -1,21 +1,21 @@
 output "key_vault_secrets_provider_object_id" {
   description = "The object ID of the key vault secrets provider."
-  value       = try(azurerm_kubernetes_cluster.this.key_vault_secrets_provider[0].secret_identity[0].object_id, null)
+  value       = try(azapi_resource.managedCluster_this.key_vault_secrets_provider[0].secret_identity[0].object_id, null)
 }
 
 output "kubelet_identity_id" {
   description = "The identity ID of the kubelet identity."
-  value       = azurerm_kubernetes_cluster.this.kubelet_identity[0].object_id
+  value       = azapi_resource.managedCluster_this.kubelet_identity[0].object_id
 }
 
 output "name" {
   description = "Name of the Kubernetes cluster."
-  value       = azurerm_kubernetes_cluster.this.name
+  value       = azapi_resource.managedCluster_this.name
 }
 
 output "node_resource_group_id" {
   description = "The resource group ID of the node resource group."
-  value       = azurerm_kubernetes_cluster.this.node_resource_group_id
+  value       = azapi_resource.managedCluster_this.node_resource_group_id
 }
 
 output "nodepool_resource_ids" {
@@ -29,7 +29,7 @@ output "nodepool_resource_ids" {
 
 output "oidc_issuer_url" {
   description = "The OIDC issuer URL of the Kubernetes cluster."
-  value       = azurerm_kubernetes_cluster.this.oidc_issuer_url
+  value       = azapi_resource.managedCluster_this.oidc_issuer_url
 }
 
 output "private_endpoints" {
@@ -41,5 +41,5 @@ output "private_endpoints" {
 
 output "resource_id" {
   description = "Resource ID of the Kubernetes cluster."
-  value       = azurerm_kubernetes_cluster.this.id
+  value       = azapi_resource.managedCluster_this.id
 }

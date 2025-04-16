@@ -3,7 +3,7 @@ module "nodepools" {
   depends_on = [azapi_update_resource.aks_cluster_post_create]
   for_each   = var.node_pools
 
-  cluster_resource_id = azurerm_kubernetes_cluster.this.id
+  cluster_resource_id = azapi_resource.managedCluster_this.id
   network_plugin_mode = var.network_profile.network_plugin_mode
 
   name    = each.value.name
